@@ -18,5 +18,4 @@ func main() {
 	if err != nil || count <= 0 {
 		log.Fatal("The input must be a positive integer")
 	}
-
 }
