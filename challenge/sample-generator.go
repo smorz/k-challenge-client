@@ -15,8 +15,6 @@ const (
 
 )
 
-func (g *Generator) GenerateDays() {}
-
 // table Returns table name to copy in
 func (t *TradeGenerator) table() string {
 	return "trade"

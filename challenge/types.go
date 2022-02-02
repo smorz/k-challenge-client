@@ -10,8 +10,6 @@ type Copyable interface {
 	table() string
 	fields() []string
 	values() ([]interface{}, bool)
-	done()
-	count() int
 }
 
 type TradeGenerator struct {
@@ -27,6 +25,9 @@ type TradableDay struct {
 	deyOffset    int
 }
 
-type Generator struct {
-	db *sql.DB
+type Copier struct {
+	db   *sql.DB
+	txn  *sql.Tx
+	stmt *sql.Stmt
+	wg   sync.WaitGroup
 }
