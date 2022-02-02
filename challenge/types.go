@@ -14,7 +14,7 @@ type Copyable interface {
 	count() int
 }
 
-type Trade struct {
+type TradeGenerator struct {
 	recordsCount int
 	generated    int
 	firstDay     time.Time
