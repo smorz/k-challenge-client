@@ -1,7 +1,11 @@
-/* A solution to a code challenge that wanted to insert
+/*
+ A solution to a code challenge that wanted to insert
 a number of random records with the highest efficiency
 in the trading table. A search revealed that in
-Postgres, copy is the best option.*/
+Postgres, copy is the best option.
+
+Please set the database constants in this file before running.
+*/
 
 package main
 
