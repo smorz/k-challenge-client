@@ -11,14 +11,17 @@ const (
 
 func (g *Generator) GenerateDays() {}
 
+// table Returns table name to copy in
 func (t *Trade) table() string {
 	return "trade"
 }
 
+// table Returns fields name of the table
 func (t *Trade) fields() []string {
 	return []string{"id", "instrumentid", "dateen", "open", "high", "low", "close"}
 }
 
+// values Generates randmon values.
 func (t *Trade) values() ([]interface{}, bool) {
 	select {
 	case day := <-t.days:
