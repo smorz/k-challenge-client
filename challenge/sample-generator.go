@@ -62,9 +62,6 @@ func (t *Trade) generateOHLC() (open, high, low, close float64) {
 }
 
 func (t *Trade) generateDays(count int) {
-	defer func() {
-		t.generateDone = true
-	}()
 	instruCount := IDEnd - IDStart                        //count of instrumnets
 	min := (instruCount * (Percentage - Variation)) / 100 // Minimum count of instruments traded per day
 	max := (instruCount * (Percentage + Variation)) / 100 // Maximum count of instruments traded per day
@@ -90,13 +87,14 @@ func (t *Trade) generateDays(count int) {
 
 		}
 		dayOffset++
-
 	}
+	t.generateDone = true
+
 }
 
 func NewTrade(recordCount int) *Trade {
 	var t Trade
 	go t.generateDays(recordCount)
-	t.days = make(chan TradableDay)
+	t.days = make(chan TradableDay, recordCount)
 	return &t
 }
