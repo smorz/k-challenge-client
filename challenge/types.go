@@ -9,7 +9,7 @@ import (
 type Copyable interface {
 	table() string
 	fields() []string
-	values() ([]interface{}, bool)
+	values() []interface{}
 }
 
 type TradeGenerator struct {
@@ -26,8 +26,9 @@ type TradableDay struct {
 }
 
 type Copier struct {
-	db   *sql.DB
-	txn  *sql.Tx
-	stmt *sql.Stmt
-	wg   sync.WaitGroup
+	db    *sql.DB
+	txn   *sql.Tx
+	stmt  *sql.Stmt
+	table Copyable
+	wg    sync.WaitGroup
 }
