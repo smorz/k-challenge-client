@@ -26,9 +26,9 @@ type TradableDay struct {
 }
 
 type Copier struct {
-	db    *sql.DB
-	txn   *sql.Tx
-	stmt  *sql.Stmt
-	table Copyable
-	wg    sync.WaitGroup
+	db     *sql.DB
+	txn    *sql.Tx
+	stmt   *sql.Stmt
+	source Copyable
+	wg     sync.WaitGroup
 }

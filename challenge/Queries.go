@@ -7,29 +7,29 @@ import (
 	"github.com/lib/pq"
 )
 
-func NewCopier(db *sql.DB, table Copyable) (*Copier, error) {
+func NewCopier(db *sql.DB, source Copyable) (*Copier, error) {
 	txn, err := db.Begin()
 	if err != nil {
 		return nil, err
 	}
 
-	stmt, err := txn.Prepare(pq.CopyIn(table.table(), table.fields()...))
+	stmt, err := txn.Prepare(pq.CopyIn(source.table(), source.fields()...))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Copier{
-		db:    db,
-		txn:   txn,
-		stmt:  stmt,
-		table: table,
+		db:     db,
+		txn:    txn,
+		stmt:   stmt,
+		source: source,
 	}, nil
 }
 
 func (c *Copier) Start(cpuCount int) (err error) {
 	for i := 0; i < cpuCount; i++ {
 		c.wg.Add(1)
-		go c.GenerateStatments()
+		go c.generateStatments()
 	}
 	c.wg.Wait()
 	_, err = c.stmt.Exec()
@@ -47,14 +47,14 @@ func (c *Copier) Start(cpuCount int) (err error) {
 	return
 }
 
-func (c *Copier) GenerateStatments() {
+func (c *Copier) generateStatments() {
 	defer c.wg.Done()
 	for {
-		v := c.table.values()
+		v := c.source.values()
 		if v == nil {
 			return
 		}
-		_, err := c.stmt.Exec(v)
+		_, err := c.stmt.Exec(v...)
 		if err != nil {
 			log.Fatal(err)
 		}

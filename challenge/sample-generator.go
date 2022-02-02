@@ -1,7 +1,9 @@
 package challenge
 
 import (
+	"errors"
 	"math/rand"
+	"time"
 )
 
 const (
@@ -105,10 +107,18 @@ func (t *TradeGenerator) generateDays() {
 	}
 }
 
-func NewTradeGenerator(recordsCount int) *TradeGenerator {
-	var t TradeGenerator
-	t.recordsCount = recordsCount
-	t.days = make(chan TradableDay, t.recordsCount)
+func NewTradeGenerator(firstDay time.Time, recordsCount int) (*TradeGenerator, error) {
+	if recordsCount <= 0 {
+		err := errors.New("recordsCount is not posetive")
+		return nil, err
+	}
+
+	t := TradeGenerator{
+		recordsCount: recordsCount,
+		generated:    0,
+		firstDay:     firstDay,
+		days:         make(chan TradableDay, recordsCount),
+	}
 	go t.generateDays()
-	return &t
+	return &t, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestTrade(t *testing.T) {
@@ -13,7 +14,7 @@ func TestTrade(t *testing.T) {
 		mut     sync.Mutex
 		wg      sync.WaitGroup
 	)
-	trade := NewTradeGenerator(count)
+	trade, _ := NewTradeGenerator(time.Now(), count)
 
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
