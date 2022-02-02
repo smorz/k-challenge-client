@@ -18,17 +18,17 @@ const (
 func (g *Generator) GenerateDays() {}
 
 // table Returns table name to copy in
-func (t *Trade) table() string {
+func (t *TradeGenerator) table() string {
 	return "trade"
 }
 
 // fields Returns fields name of the table
-func (t *Trade) fields() []string {
+func (t *TradeGenerator) fields() []string {
 	return []string{"id", "instrumentid", "dateen", "open", "high", "low", "close"}
 }
 
 // values Generates randmon values.
-func (t *Trade) values() []interface{} {
+func (t *TradeGenerator) values() []interface{} {
 	for {
 		select {
 		case day := <-t.days:
@@ -50,14 +50,14 @@ func (t *Trade) values() []interface{} {
 	}
 }
 
-func (t *Trade) finished() bool {
+func (t *TradeGenerator) finished() bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.generated == t.recordsCount
 }
 
 // generateLowHigh Generates random low and high
-func (t *Trade) generateLowHigh() (low, high float64) {
+func (t *TradeGenerator) generateLowHigh() (low, high float64) {
 	a := rand.Float64() * Highest
 	b := rand.Float64() * Highest
 	if b < a {
@@ -67,7 +67,7 @@ func (t *Trade) generateLowHigh() (low, high float64) {
 }
 
 // generateOHLC Generates random open, high, low, and close
-func (t *Trade) generateOHLC() (open, high, low, close float64) {
+func (t *TradeGenerator) generateOHLC() (open, high, low, close float64) {
 	low, high = t.generateLowHigh()
 	difference := high - low
 	open = low + rand.Float64()*difference
@@ -75,7 +75,7 @@ func (t *Trade) generateOHLC() (open, high, low, close float64) {
 	return
 }
 
-func (t *Trade) generateDays() {
+func (t *TradeGenerator) generateDays() {
 
 	instruCount := IDEnd - IDStart                        //count of instrumnets
 	min := (instruCount * (Percentage - Variation)) / 100 // Minimum count of instruments traded per day
@@ -107,8 +107,8 @@ func (t *Trade) generateDays() {
 	}
 }
 
-func NewTrade(recordsCount int) *Trade {
-	var t Trade
+func NewTradeGenerator(recordsCount int) *TradeGenerator {
+	var t TradeGenerator
 	t.recordsCount = recordsCount
 	t.days = make(chan TradableDay, t.recordsCount)
 	go t.generateDays()

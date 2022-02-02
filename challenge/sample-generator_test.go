@@ -13,7 +13,7 @@ func TestTrade(t *testing.T) {
 		mut     sync.Mutex
 		wg      sync.WaitGroup
 	)
-	trade := NewTrade(count)
+	trade := NewTradeGenerator(count)
 
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
