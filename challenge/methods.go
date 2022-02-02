@@ -7,6 +7,12 @@ import (
 const (
 	Highest    float64 = 999999999 //The highest possible price for an instrument
 	TimeLayout         = `'2006-01-02'`
+
+	IDStart    = 1  // Instruments ID range start
+	IDEnd      = 50 // Instruments ID range end
+	Percentage = 90 // Average percentage of instruments traded per day
+	Variation  = 9  // Percentage variation range
+
 )
 
 func (g *Generator) GenerateDays() {}
@@ -16,7 +22,7 @@ func (t *Trade) table() string {
 	return "trade"
 }
 
-// table Returns fields name of the table
+// fields Returns fields name of the table
 func (t *Trade) fields() []string {
 	return []string{"id", "instrumentid", "dateen", "open", "high", "low", "close"}
 }
@@ -53,4 +59,44 @@ func (t *Trade) generateOHLC() (open, high, low, close float64) {
 	open = low + rand.Float64()*difference
 	close = low + rand.Float64()*difference
 	return
+}
+
+func (t *Trade) generateDays(count int) {
+	defer func() {
+		t.generateDone = true
+	}()
+	instruCount := IDEnd - IDStart                        //count of instrumnets
+	min := (instruCount * (Percentage - Variation)) / 100 // Minimum count of instruments traded per day
+	max := (instruCount * (Percentage + Variation)) / 100 // Maximum count of instruments traded per day
+	difference := max - min
+	dayOffset := 0
+	counter := 0
+	for {
+		tradeCount := int(rand.Int63n(int64(difference))) + min
+		if counter+tradeCount > count {
+			tradeCount = count - counter
+		}
+		//A piece of pseudo-random permutation of the offsets of instrument IDs from the start of the ID range.
+		IDOffsets := rand.Perm(instruCount)
+
+		for j := 0; j < tradeCount; j++ {
+			t.days <- TradableDay{
+				instrumentID: IDStart + IDOffsets[j],
+				deyOffset:    dayOffset,
+			}
+		}
+		if counter += tradeCount; counter == count {
+			break
+
+		}
+		dayOffset++
+
+	}
+}
+
+func NewTrade(recordCount int) *Trade {
+	var t Trade
+	go t.generateDays(recordCount)
+	t.days = make(chan TradableDay)
+	return &t
 }
