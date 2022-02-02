@@ -2,6 +2,7 @@ package challenge
 
 import (
 	"database/sql"
+	"sync"
 	"time"
 )
 
@@ -9,12 +10,16 @@ type Copyable interface {
 	table() string
 	fields() []string
 	values() ([]interface{}, bool)
+	done()
+	count() int
 }
 
 type Trade struct {
+	recordsCount int
+	generated    int
 	firstDay     time.Time
 	days         chan TradableDay
-	generateDone bool
+	mu           sync.Mutex
 }
 
 type TradableDay struct {

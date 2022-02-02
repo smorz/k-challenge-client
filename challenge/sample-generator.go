@@ -28,18 +28,32 @@ func (t *Trade) fields() []string {
 }
 
 // values Generates randmon values.
-func (t *Trade) values() ([]interface{}, bool) {
-	select {
-	case day := <-t.days:
-		open, high, low, close := t.generateOHLC()
-		return []interface{}{1, day.instrumentID,
-			t.firstDay.AddDate(0, 0, day.deyOffset).Format(TimeLayout),
-			open, high, low, close,
-		}, false
-	default:
-		return nil, t.generateDone
+func (t *Trade) values() []interface{} {
+	for {
+		select {
+		case day := <-t.days:
+			open, high, low, close := t.generateOHLC()
+			t.mu.Lock()
+			defer t.mu.Unlock()
+			t.generated++
+			return []interface{}{1, day.instrumentID,
+				t.firstDay.AddDate(0, 0, day.deyOffset).Format(TimeLayout),
+				open, high, low, close,
+			}
+		default:
+			if t.finished() {
+				return nil
+			}
+			//fmt.Print(t.generated, t.recordsCount, len(t.days), " | ")
+			continue
+		}
 	}
+}
 
+func (t *Trade) finished() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.generated == t.recordsCount
 }
 
 // generateLowHigh Generates random low and high
@@ -61,7 +75,8 @@ func (t *Trade) generateOHLC() (open, high, low, close float64) {
 	return
 }
 
-func (t *Trade) generateDays(count int) {
+func (t *Trade) generateDays() {
+
 	instruCount := IDEnd - IDStart                        //count of instrumnets
 	min := (instruCount * (Percentage - Variation)) / 100 // Minimum count of instruments traded per day
 	max := (instruCount * (Percentage + Variation)) / 100 // Maximum count of instruments traded per day
@@ -70,31 +85,32 @@ func (t *Trade) generateDays(count int) {
 	counter := 0
 	for {
 		tradeCount := int(rand.Int63n(int64(difference))) + min
-		if counter+tradeCount > count {
-			tradeCount = count - counter
+		if counter+tradeCount > t.recordsCount {
+			tradeCount = t.recordsCount - counter
 		}
 		//A piece of pseudo-random permutation of the offsets of instrument IDs from the start of the ID range.
 		IDOffsets := rand.Perm(instruCount)
 
 		for j := 0; j < tradeCount; j++ {
+
 			t.days <- TradableDay{
 				instrumentID: IDStart + IDOffsets[j],
 				deyOffset:    dayOffset,
 			}
 		}
-		if counter += tradeCount; counter == count {
+
+		if counter += tradeCount; counter == t.recordsCount {
 			break
 
 		}
 		dayOffset++
 	}
-	t.generateDone = true
-
 }
 
-func NewTrade(recordCount int) *Trade {
+func NewTrade(recordsCount int) *Trade {
 	var t Trade
-	go t.generateDays(recordCount)
-	t.days = make(chan TradableDay, recordCount)
+	t.recordsCount = recordsCount
+	t.days = make(chan TradableDay, t.recordsCount)
+	go t.generateDays()
 	return &t
 }

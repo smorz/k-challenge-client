@@ -2,36 +2,43 @@ package challenge
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
 func TestTrade(t *testing.T) {
 	var (
-		i    int = 0
-		n    int = 1050
-		done bool
-		v    []interface{}
+		counter int = 0
+		count   int = 10000000
+		mut     sync.Mutex
+		wg      sync.WaitGroup
 	)
-	trade := NewTrade(n)
-	for !done {
-		v, done = trade.values()
-		if !done && v == nil {
-			continue
-		}
-		if i%100 == 0 {
-			fmt.Printf("%04d: %v\n", i, v)
-		}
-		if done {
-			if i < n-1 {
-				t.Errorf("finished before all records were generated. i = %d", i)
+	trade := NewTrade(count)
+
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				v := trade.values()
+				if v == nil {
+					wg.Done()
+					break
+
+				}
+				mut.Lock()
+				if counter%(count/10) == 0 {
+					fmt.Printf("%04d: %v\n", counter, v)
+				}
+				counter++
+				mut.Unlock()
 			}
-			break
-		}
-		i++
-
+		}()
 	}
-	if i > n {
-		t.Errorf("did not stop in time. i = %d", i)
+	wg.Wait()
+	if counter < count {
+		t.Errorf("finished before all records were generated. counter = %d", counter)
 	}
-
+	if counter > count {
+		t.Errorf("did not stop in time. counter = %d", counter)
+	}
 }
