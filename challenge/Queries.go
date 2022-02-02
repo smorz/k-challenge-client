@@ -7,6 +7,9 @@ import (
 	"github.com/lib/pq"
 )
 
+// NewCopier create a Copier instace
+//
+// source can be a random generator
 func NewCopier(db *sql.DB, source Copyable) (*Copier, error) {
 	txn, err := db.Begin()
 	if err != nil {
@@ -26,8 +29,12 @@ func NewCopier(db *sql.DB, source Copyable) (*Copier, error) {
 	}, nil
 }
 
-func (c *Copier) Start(cpuCount int) (err error) {
-	for i := 0; i < cpuCount; i++ {
+// Start generates statements concurrently and finally committs.
+//
+// workerCount is the number of workers in the workers pool;
+// that can usually be set to the number of CPUs.
+func (c *Copier) Start(workerCount int) (err error) {
+	for i := 0; i < workerCount; i++ {
 		c.wg.Add(1)
 		go c.generateStatments()
 	}
@@ -47,6 +54,10 @@ func (c *Copier) Start(cpuCount int) (err error) {
 	return
 }
 
+// generateStatments
+//
+// as long as Copyable interface gives none-nil value,
+// it receives values and make statements.
 func (c *Copier) generateStatments() {
 	defer c.wg.Done()
 	for {

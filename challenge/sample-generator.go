@@ -10,8 +10,10 @@ const (
 	Highest    float64 = 999999999 //The highest possible price for an instrument
 	TimeLayout         = `'2006-01-02'`
 
+	// Determine the ranges of random numbers.
+	// In the future, if necessary, they can be received from the input.
 	IDStart    = 1  // Instruments ID range start
-	IDEnd      = 50 // Instruments ID range end
+	IDEnd      = 4  // Instruments ID range end
 	Percentage = 90 // Average percentage of instruments traded per day
 	Variation  = 9  // Percentage variation range
 
@@ -75,31 +77,41 @@ func (t *TradeGenerator) generateOHLC() (open, high, low, close float64) {
 	return
 }
 
+// generateDays creates a sufficient amount of days and determines which instrument was traded on each day.
+// Is execute at TradeGenerator creating
 func (t *TradeGenerator) generateDays() {
-
-	instruCount := IDEnd - IDStart                        //count of instrumnets
+	//count of instrumnets
+	instruCount := IDEnd - IDStart
 	min := (instruCount * (Percentage - Variation)) / 100 // Minimum count of instruments traded per day
 	max := (instruCount * (Percentage + Variation)) / 100 // Maximum count of instruments traded per day
+	if max == 0 {
+		max = 1
+	}
 	difference := max - min
+
 	dayOffset := 0
 	counter := 0
+	dayTradeCount := min
 	for {
-		tradeCount := int(rand.Int63n(int64(difference))) + min
-		if counter+tradeCount > t.recordsCount {
-			tradeCount = t.recordsCount - counter
+		if difference != 0 {
+			dayTradeCount = int(rand.Int63n(int64(difference))) + min
 		}
-		//A piece of pseudo-random permutation of the offsets of instrument IDs from the start of the ID range.
+		// If today's trade are  more than the required (today is last day)
+		if counter+dayTradeCount > t.recordsCount {
+			dayTradeCount = t.recordsCount - counter
+		}
+		//A slice of pseudo-random permutation of the offsets of instrument IDs from the start of the ID range.
 		IDOffsets := rand.Perm(instruCount)
 
-		for j := 0; j < tradeCount; j++ {
+		for j := 0; j < dayTradeCount; j++ {
 
-			t.days <- TradableDay{
+			t.days <- instrumentDay{
 				instrumentID: IDStart + IDOffsets[j],
 				deyOffset:    dayOffset,
 			}
 		}
 
-		if counter += tradeCount; counter == t.recordsCount {
+		if counter += dayTradeCount; counter == t.recordsCount {
 			break
 
 		}
@@ -107,6 +119,7 @@ func (t *TradeGenerator) generateDays() {
 	}
 }
 
+// NewTradeGenerator Create a new TradeGenerator
 func NewTradeGenerator(firstDay time.Time, recordsCount int) (*TradeGenerator, error) {
 	if recordsCount <= 0 {
 		err := errors.New("recordsCount is not posetive")
@@ -117,7 +130,7 @@ func NewTradeGenerator(firstDay time.Time, recordsCount int) (*TradeGenerator, e
 		recordsCount: recordsCount,
 		generated:    0,
 		firstDay:     firstDay,
-		days:         make(chan TradableDay, recordsCount),
+		days:         make(chan instrumentDay, recordsCount),
 	}
 	go t.generateDays()
 	return &t, nil
